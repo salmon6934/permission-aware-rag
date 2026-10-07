@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+coverage/
+.DS_Store
+tasks.md
+progress.md
+PROJECT_SPEC_AND_ROADMAP.md
