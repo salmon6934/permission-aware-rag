@@ -1,6 +1,7 @@
 import fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { appPool } from './db/pool.js';
+import { devRoutes } from './routes/dev.js';
 
 export function buildApp(): FastifyInstance {
   const app = fastify({
@@ -30,6 +31,9 @@ export function buildApp(): FastifyInstance {
       });
     }
   });
+
+  // Register dev routes (test token generation)
+  app.register(devRoutes);
 
   return app;
 }

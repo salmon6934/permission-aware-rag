@@ -19,12 +19,18 @@ export class TransformersEmbedder implements EmbeddingProvider {
 
   public async embed(texts: string[]): Promise<number[][]> {
     await this.init();
+    if (!this.pipe) {
+      throw new Error('Embedder pipeline failed to initialize');
+    }
 
     const embeddings: number[][] = [];
     for (const text of texts) {
-      const output = await this.pipe(text, { pooling: 'mean', normalize: true });
+      const output = (await (this.pipe as (t: string, opts?: unknown) => Promise<{ data: Float32Array }>)(
+        text,
+        { pooling: 'mean', normalize: true }
+      ));
       // output.data is Float32Array with length 384
-      const vector = Array.from(output.data as Float32Array).slice(0, this.dimensions);
+      const vector = Array.from(output.data).slice(0, this.dimensions);
       embeddings.push(vector);
     }
 
