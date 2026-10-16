@@ -68,12 +68,12 @@ export async function retrieveChunks(options: RetrievalQuery): Promise<Retrieved
         sensitivity, 
         acl_version, 
         embedding_model,
-        ROUND((1 - (embedding <=> $1))::numeric, 4)::float AS similarity
+        ROUND((1 - (embedding <=> $1::extensions.vector))::numeric, 4)::float AS similarity
       FROM chunks
       WHERE tenant_id = $2
         AND allowed_roles && $3
         AND sensitivity <= $4
-      ORDER BY embedding <=> $1
+      ORDER BY embedding <=> $1::extensions.vector
       LIMIT $5;
     `;
 

@@ -76,7 +76,7 @@ export class HostedLLM implements LLMProvider {
   }
 
   private async callGroq(prompt: string, options: GenerationOptions): Promise<LLMResponse> {
-    const model = 'llama-3.1-8b-instant';
+    const model = 'openai/gpt-oss-20b';
     const url = 'https://api.groq.com/openai/v1/chat/completions';
 
     const body = {

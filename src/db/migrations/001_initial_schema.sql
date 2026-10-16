@@ -2,11 +2,14 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- Create Roles if they do not exist
+-- Create Roles if they do not exist (cloud-safe)
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'migrator') THEN
-        CREATE ROLE migrator WITH LOGIN PASSWORD 'migrator_secret' SUPERUSER CREATEDB CREATEROLE BYPASSRLS;
+    -- Only create superuser migrator if running in local environment with raw superuser
+    IF (SELECT rolsuper FROM pg_roles WHERE rolname = CURRENT_USER) THEN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'migrator') THEN
+            CREATE ROLE migrator WITH LOGIN PASSWORD 'migrator_secret' SUPERUSER CREATEDB CREATEROLE BYPASSRLS;
+        END IF;
     END IF;
 
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
@@ -15,12 +18,30 @@ BEGIN
 END
 $$;
 
--- Grant database connection
-GRANT CONNECT ON DATABASE rag_db TO migrator;
-GRANT CONNECT ON DATABASE rag_db TO app_user;
+-- Grant database connection dynamically based on database name
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_database WHERE datname = 'rag_db') THEN
+        EXECUTE 'GRANT CONNECT ON DATABASE rag_db TO app_user';
+    END IF;
+    IF EXISTS (SELECT FROM pg_database WHERE datname = 'postgres') THEN
+        EXECUTE 'GRANT CONNECT ON DATABASE postgres TO app_user';
+    END IF;
+END
+$$;
 
--- Switch to migrator context for table creation
-SET ROLE migrator;
+-- Switch to migrator context if available, otherwise proceed as current user (e.g. Supabase postgres)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'migrator') THEN
+        BEGIN
+            EXECUTE 'SET ROLE migrator';
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;
+    END IF;
+END
+$$;
 
 -- 1. Tenants Table
 CREATE TABLE IF NOT EXISTS tenants (
@@ -148,7 +169,21 @@ EXECUTE FUNCTION prevent_audit_events_mutation();
 -- Reset to superuser to grant permissions to app_user
 RESET ROLE;
 
+-- 5. Seed Default Multi-Tenant Organizations
+INSERT INTO tenants (id, name, config)
+VALUES 
+    ('11111111-1111-1111-1111-111111111111', 'Apex Global Inc', '{"domain": "apex.com"}'),
+    ('22222222-2222-2222-2222-222222222222', 'Nexus Dynamics LLC', '{"domain": "nexus.io"}')
+ON CONFLICT (id) DO NOTHING;
+
 GRANT USAGE ON SCHEMA public TO app_user;
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.schemata WHERE schema_name = 'extensions') THEN
+        EXECUTE 'GRANT USAGE ON SCHEMA extensions TO app_user';
+    END IF;
+END
+$$;
 GRANT SELECT ON tenants TO app_user;
 GRANT SELECT, INSERT, UPDATE, DELETE ON documents TO app_user;
 GRANT SELECT, INSERT, UPDATE, DELETE ON chunks TO app_user;

@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+.git
+.github
+*.log
+coverage
+docs
+tests
+tasks.md
+progress.md
+PROJECT_SPEC_AND_ROADMAP.md
+.DS_Store
