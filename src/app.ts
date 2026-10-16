@@ -2,7 +2,13 @@ import fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
+import fastifyStatic from '@fastify/static';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { appPool } from './db/pool.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { devRoutes } from './routes/dev.js';
 import { documentRoutes } from './routes/documents.js';
 import { queryRoutes } from './routes/query.js';
@@ -33,6 +39,12 @@ export function buildApp(): FastifyInstance {
       fileSize: MAX_FILE_SIZE_BYTES,
       files: 1,
     },
+  });
+
+  // Serve static assets for the Declassified Records Office frontend dashboard
+  app.register(fastifyStatic, {
+    root: path.join(__dirname, '../public'),
+    prefix: '/',
   });
 
   // Health check endpoint

@@ -14,6 +14,7 @@ export interface RetrievalQuery {
 export interface RetrievedChunk {
   id: string;
   doc_id: string;
+  filename: string;
   text: string;
   allowed_roles: string[];
   sensitivity: number;
@@ -61,25 +62,28 @@ export async function retrieveChunks(options: RetrievalQuery): Promise<Retrieved
     // In-query vector search combining vector distance (<=>), array overlap (&&), and scalar comparison (<=)
     const sql = `
       SELECT 
-        id, 
-        doc_id, 
-        text, 
-        allowed_roles, 
-        sensitivity, 
-        acl_version, 
-        embedding_model,
-        ROUND((1 - (embedding <=> $1::extensions.vector))::numeric, 4)::float AS similarity
-      FROM chunks
-      WHERE tenant_id = $2
-        AND allowed_roles && $3
-        AND sensitivity <= $4
-      ORDER BY embedding <=> $1::extensions.vector
+        c.id, 
+        c.doc_id, 
+        d.filename,
+        c.text, 
+        c.allowed_roles, 
+        c.sensitivity, 
+        c.acl_version, 
+        c.embedding_model,
+        ROUND((1 - (c.embedding <=> $1::extensions.vector))::numeric, 4)::float AS similarity
+      FROM chunks c
+      JOIN documents d ON d.id = c.doc_id
+      WHERE c.tenant_id = $2
+        AND c.allowed_roles && $3
+        AND c.sensitivity <= $4
+      ORDER BY c.embedding <=> $1::extensions.vector
       LIMIT $5;
     `;
 
     const result = await client.query<{
       id: string;
       doc_id: string;
+      filename: string;
       text: string;
       allowed_roles: string[];
       sensitivity: number;

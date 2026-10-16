@@ -6,6 +6,36 @@ import { ingestDocument, deleteDocument, updateDocumentAcl } from '../services/i
 import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from '../ingestion/constants.js';
 
 export async function documentRoutes(app: FastifyInstance): Promise<void> {
+  // List documents for current tenant (requires authentication)
+  app.get(
+    '/documents',
+    {
+      preHandler: [authenticate],
+    },
+    async (request, reply) => {
+      const principal = request.principal;
+      if (!principal) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const { withTenantTransaction } = await import('../db/tenantDb.js');
+      const docs = await withTenantTransaction(principal.tenant_id, async (client) => {
+        const res = await client.query(`
+          SELECT d.id, d.tenant_id, d.filename, d.source, d.allowed_roles, d.sensitivity, d.acl_version, d.status, d.created_at,
+                 COUNT(c.id)::int AS chunk_count
+          FROM documents d
+          LEFT JOIN chunks c ON c.doc_id = d.id
+          WHERE d.tenant_id = $1
+          GROUP BY d.id
+          ORDER BY d.created_at DESC;
+        `, [principal.tenant_id]);
+        return res.rows;
+      });
+
+      return reply.status(200).send({ documents: docs });
+    }
+  );
+
   // Ingest document (requires 'editor' or 'admin')
   app.post(
     '/documents',

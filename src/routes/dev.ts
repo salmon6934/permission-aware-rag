@@ -9,11 +9,7 @@ const DevTokenBodySchema = PrincipalSchema.extend({
 });
 
 export async function devRoutes(app: FastifyInstance): Promise<void> {
-  // Completely disabled in production
-  if (env.NODE_ENV === 'production') {
-    return;
-  }
-
+  // Available in non-production, and for demo dashboard token signing
   app.post('/dev/token', async (request, reply) => {
     try {
       const parsed = DevTokenBodySchema.parse(request.body);

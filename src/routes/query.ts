@@ -123,6 +123,10 @@ export async function queryRoutes(app: FastifyInstance): Promise<void> {
             : chunks.map((c) => ({
                 doc_id: c.doc_id,
                 chunk_id: c.id,
+                filename: c.filename,
+                text: c.text,
+                sensitivity: c.sensitivity,
+                allowed_roles: c.allowed_roles,
                 similarity: c.similarity,
               })),
           query_hash: queryHash,

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Declassified Records Office | Permission-Aware Multi-Tenant RAG</title>
+  <meta name="description" content="Official intelligence dashboard demonstrating in-query vector authorization, tenant cryptographic boundaries, and tamper-evident audit logging.">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Official Records Top Bar -->
+  <header class="records-header">
+    <div class="records-title-group">
+      <span class="archive-stamp">SEC // DEPT-RAG</span>
+      <div>
+        <h1>Declassified Records Office</h1>
+      </div>
+    </div>
+
+    <nav class="records-nav">
+      <div class="status-telemetry">
+        <span class="telemetry-dot"></span>
+        <span id="telemetry-health">STATUS: ONLINE</span>
+        <span style="color: var(--border-subtle)">|</span>
+        <span id="telemetry-queries">QUERIES: 0</span>
+      </div>
+
+      <button id="nav-btn-dashboard" class="nav-tab-btn active" onclick="switchView('dashboard')">
+        <span>📋</span> PERSONNEL MATRIX
+      </button>
+      <button id="nav-btn-admin" class="nav-tab-btn" onclick="switchView('admin')">
+        <span>🗄️</span> FILING DESK
+      </button>
+      <button id="nav-btn-audit" class="nav-tab-btn" onclick="switchView('audit')">
+        <span>🔒</span> AUDIT LEDGER
+      </button>
+    </nav>
+  </header>
+
+  <!-- View 1: Main Personnel Comparison Dashboard -->
+  <main id="view-dashboard">
+    <!-- Official Dispatch Telegraph (Broadcast Bar) -->
+    <section class="telegraph-bar">
+      <div class="telegraph-card">
+        <div class="telegraph-input-wrap">
+          <input 
+            type="text" 
+            id="broadcast-input" 
+            class="telegraph-input" 
+            placeholder="Type query to transmit simultaneously to all active personnel badges..."
+            onkeydown="if(event.key === 'Enter') handleBroadcastQuery()"
+          />
+        </div>
+        <button class="btn-dispatch" onclick="handleBroadcastQuery()">
+          <span>TRANSMIT DISPATCH</span> ➔
+        </button>
+      </div>
+
+      <!-- Quick Inspection Queries -->
+      <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-family: var(--font-typewriter); font-size: 11px; color: var(--ink-muted); text-transform: uppercase;">
+          PRE-FORMULATED INQUIRIES:
+        </span>
+        <button class="prompt-chip" onclick="setBroadcastPrompt('What are the quantum photonics propulsion specifications?')">
+          Quantum Propulsion Specs (Engineering L1)
+        </button>
+        <button class="prompt-chip" onclick="setBroadcastPrompt('What are the capital budget allocations for Q3?')">
+          Capital Budget (Finance L2)
+        </button>
+        <button class="prompt-chip" onclick="setBroadcastPrompt('Summarize executive board minutes regarding Project Vulcan')">
+          Board Minutes (Executive L3)
+        </button>
+      </div>
+    </section>
+
+    <!-- Personnel Badges Center Stage -->
+    <section class="main-view-container">
+      <div class="action-ribbon">
+        <div class="action-btn-group">
+          <button class="btn-secondary" onclick="openAddPersonaModal()">
+            <span>➕</span> ISSUE NEW CREDENTIAL BADGE
+          </button>
+          <button class="btn-secondary" onclick="seedDefaultPersonas()">
+            <span>⚡</span> SEED STANDARD FIELD ROLES
+          </button>
+        </div>
+        <div style="font-family: var(--font-typewriter); font-size: 11px; color: var(--ink-muted);">
+          ACTIVE PERSONNEL: <span id="badge-count-label">0 / 4 BADGES</span>
+        </div>
+      </div>
+
+      <div class="persona-grid" id="persona-grid-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+  </main>
+
+  <!-- View 2: Filing Desk / Admin Panel -->
+  <section id="view-admin" class="filing-desk-container hidden">
+    <div class="filing-desk-card">
+      <div class="filing-tabs">
+        <button class="filing-tab active" id="tab-ingest-btn" onclick="switchAdminTab('ingest')">
+          CLASSIFY & INGEST RECORD
+        </button>
+        <button class="filing-tab" id="tab-records-btn" onclick="switchAdminTab('records')">
+          DEPOSIT ARCHIVE BROWSER
+        </button>
+      </div>
+
+      <!-- Tab A: Classify & Ingest Form -->
+      <div id="admin-tab-ingest" class="filing-tab-content">
+        <form id="ingest-form" onsubmit="handleDocumentUpload(event)">
+          <div class="dossier-form-grid">
+            <div>
+              <div class="form-group">
+                <label class="form-label">ASSIGNED TENANT REPOSITORY</label>
+                <select id="ingest-tenant" class="form-select">
+                  <option value="11111111-1111-1111-1111-111111111111">Apex Global Inc (11111111-...)</option>
+                  <option value="22222222-2222-2222-2222-222222222222">Nexus Dynamics LLC (22222222-...)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">REQUIRED CLEARANCE SENSITIVITY</label>
+                <select id="ingest-sensitivity" class="form-select">
+                  <option value="0">LEVEL 0 // PUBLIC (General Access)</option>
+                  <option value="1" selected>LEVEL 1 // INTERNAL (Staff Only)</option>
+                  <option value="2">LEVEL 2 // CONFIDENTIAL (Management & Ops)</option>
+                  <option value="3">LEVEL 3 // RESTRICTED (Executive Eyes Only)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">AUTHORIZED DIVISION ROLES</label>
+                <div style="display: flex; gap: 12px; margin-top: 6px; font-family: var(--font-typewriter); font-size: 12px;">
+                  <label><input type="checkbox" name="ingest_roles" value="engineering" checked> engineering</label>
+                  <label><input type="checkbox" name="ingest_roles" value="finance"> finance</label>
+                  <label><input type="checkbox" name="ingest_roles" value="executive"> executive</label>
+                  <label><input type="checkbox" name="ingest_roles" value="admin"> admin</label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group">
+                <label class="form-label">RECORD ATTACHMENT (.MD, .TXT, .PDF)</label>
+                <div class="dropzone-box" onclick="document.getElementById('file-input').click()">
+                  <div class="dropzone-icon">📁</div>
+                  <div class="dropzone-title" id="file-label">SELECT RECORD TO ARCHIVE</div>
+                  <div class="dropzone-sub">In-process vector embeddings generated on submission</div>
+                  <input type="file" id="file-input" style="display: none;" onchange="handleFileSelected(event)" accept=".md,.txt,.pdf">
+                </div>
+              </div>
+
+              <button type="submit" class="btn-dispatch" style="width: 100%; justify-content: center; margin-top: 16px;">
+                INDEX & STAMP RECORD
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tab B: Active Archive Browser -->
+      <div id="admin-tab-records" class="filing-tab-content hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 14px; text-transform: uppercase;">Indexed Tenant Records</h3>
+          <button class="btn-secondary" onclick="loadTenantDocuments()"><span>🔄</span> REFRESH ARCHIVE</button>
+        </div>
+        <table class="records-table">
+          <thead>
+            <tr>
+              <th>RECORD FILENAME</th>
+              <th>CLASSIFICATION</th>
+              <th>ALLOWED DIVISIONS</th>
+              <th>CHUNKS</th>
+              <th>STATUS</th>
+              <th class="text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="records-table-body">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- View 3: Tamper-Evident Audit Ledger -->
+  <section id="view-audit" class="filing-desk-container hidden">
+    <div class="filing-desk-card">
+      <div style="padding: 20px; background: var(--bg-concrete-light); border-bottom: 2px solid var(--ink-navy); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 style="font-size: 15px; font-weight: 800; text-transform: uppercase;">Cryptographic Chain of Custody Ledger</h2>
+          <p style="font-family: var(--font-typewriter); font-size: 11px; color: var(--ink-muted); margin-top: 2px;">
+            Immutable SHA-256 hash chaining (Prev Hash ➔ Current Hash). Zero-tamper verified.
+          </p>
+        </div>
+        <button class="btn-dispatch" onclick="verifyAuditLedger()">
+          <span>VERIFY CRYPTOGRAPHIC CHAIN</span> 🔒
+        </button>
+      </div>
+
+      <div style="padding: 20px;">
+        <div id="audit-verification-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 3px; font-family: var(--font-typewriter); font-size: 12px;"></div>
+
+        <table class="records-table">
+          <thead>
+            <tr>
+              <th>SEQ #</th>
+              <th>TIMESTAMP</th>
+              <th>PERSONNEL</th>
+              <th>ROLES / CLEARANCE</th>
+              <th>REQUEST ID</th>
+              <th>HASH LINKAGE (PREV ➔ CURRENT)</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal: Issue New Credential Badge -->
+  <div id="modal-add-persona" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>ISSUE NEW CREDENTIAL BADGE</h3>
+        <button class="btn-close-modal" onclick="closeAddPersonaModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form onsubmit="handleCreatePersona(event)">
+          <div class="form-group">
+            <label class="form-label">PERSONNEL NAME</label>
+            <input type="text" id="modal-persona-name" class="form-input" placeholder="e.g. Dana Scully" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ASSIGNED ORGANIZATION / TENANT</label>
+            <select id="modal-persona-tenant" class="form-select">
+              <option value="11111111-1111-1111-1111-111111111111">Apex Global Inc</option>
+              <option value="22222222-2222-2222-2222-222222222222">Nexus Dynamics LLC</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">SECURITY CLEARANCE STRIPE</label>
+            <select id="modal-persona-clearance" class="form-select">
+              <option value="0">LEVEL 0 // PUBLIC</option>
+              <option value="1" selected>LEVEL 1 // INTERNAL</option>
+              <option value="2">LEVEL 2 // CONFIDENTIAL</option>
+              <option value="3">LEVEL 3 // RESTRICTED</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ASSIGNED DIVISION ROLES (Comma separated)</label>
+            <input type="text" id="modal-persona-roles" class="form-input" placeholder="engineering, finance, admin" value="engineering" required>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeAddPersonaModal()">CANCEL</button>
+            <button type="submit" class="btn-dispatch" style="flex: 2; justify-content: center;">PRINT BADGE</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
