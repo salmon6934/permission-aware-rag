@@ -6,6 +6,7 @@ import { retrieveChunks } from '../services/retrieval.js';
 import { buildPrompt, FALLBACK_DENIAL_ANSWER } from '../services/promptBuilder.js';
 import { getLLMProvider } from '../services/llm/index.js';
 import { recordAuditEvent, computeQueryHash } from '../services/auditLogger.js';
+import { metrics } from '../services/metrics.js';
 
 const QueryBodySchema = z.object({
   query: z.string().min(1, { message: 'query cannot be empty' }),
@@ -36,6 +37,8 @@ export async function queryRoutes(app: FastifyInstance): Promise<void> {
       const { query, limit } = parseResult.data;
       const requestId = `req-${crypto.randomUUID().slice(0, 8)}`;
       const queryHash = computeQueryHash(query);
+      const startTime = Date.now();
+      metrics.recordRequest();
 
       try {
         // 1. Filtered vector retrieval (in-query permission enforcement)
@@ -47,6 +50,8 @@ export async function queryRoutes(app: FastifyInstance): Promise<void> {
 
         // 2. If no chunks authorized / found: fail closed uniformly without calling LLM
         if (chunks.length === 0) {
+          metrics.recordQuery(Date.now() - startTime, true, false);
+
           await recordAuditEvent({
             tenantId: principal.tenant_id,
             principal,
@@ -74,6 +79,7 @@ export async function queryRoutes(app: FastifyInstance): Promise<void> {
           llmResponse = await llm.generateAnswer(prompt);
         } catch (llmErr) {
           // LLM failure after retries -> audit failure and fail closed
+          metrics.recordQuery(Date.now() - startTime, false, false);
           request.log.error(llmErr, 'LLM generation failed after retries');
 
           await recordAuditEvent({
@@ -96,6 +102,7 @@ export async function queryRoutes(app: FastifyInstance): Promise<void> {
         }
 
         // 4. Audit successful generation event
+        metrics.recordQuery(Date.now() - startTime, false, true);
         await recordAuditEvent({
           tenantId: principal.tenant_id,
           principal,

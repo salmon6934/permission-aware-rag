@@ -7,6 +7,7 @@ import { devRoutes } from './routes/dev.js';
 import { documentRoutes } from './routes/documents.js';
 import { queryRoutes } from './routes/query.js';
 import { auditRoutes } from './routes/audit.js';
+import { metricsRoutes } from './routes/metrics.js';
 import { MAX_FILE_SIZE_BYTES } from './ingestion/constants.js';
 
 export function buildApp(): FastifyInstance {
@@ -63,6 +64,9 @@ export function buildApp(): FastifyInstance {
 
   // Register audit routes (hash chain inspection and cryptographic verification)
   app.register(auditRoutes);
+
+  // Register observability metrics endpoint
+  app.register(metricsRoutes);
 
   // Centralized Error Sanitization Handler
   app.setErrorHandler((error, request, reply) => {
