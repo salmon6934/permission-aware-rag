@@ -4,6 +4,8 @@ import multipart from '@fastify/multipart';
 import { appPool } from './db/pool.js';
 import { devRoutes } from './routes/dev.js';
 import { documentRoutes } from './routes/documents.js';
+import { queryRoutes } from './routes/query.js';
+import { auditRoutes } from './routes/audit.js';
 import { MAX_FILE_SIZE_BYTES } from './ingestion/constants.js';
 
 export function buildApp(): FastifyInstance {
@@ -46,8 +48,14 @@ export function buildApp(): FastifyInstance {
   // Register dev routes (test token generation)
   app.register(devRoutes);
 
-  // Register document routes (upload and deletion)
+  // Register document routes (upload, deletion, and ACL updates)
   app.register(documentRoutes);
+
+  // Register query route (RAG answer generation with citations)
+  app.register(queryRoutes);
+
+  // Register audit routes (hash chain inspection and cryptographic verification)
+  app.register(auditRoutes);
 
   return app;
 }
