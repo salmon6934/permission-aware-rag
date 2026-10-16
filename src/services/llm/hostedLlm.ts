@@ -45,10 +45,12 @@ export class HostedLLM implements LLMProvider {
       },
     };
 
+    const timeoutMs = options.timeoutMs ?? 30000;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (!res.ok) {
@@ -84,6 +86,7 @@ export class HostedLLM implements LLMProvider {
       max_tokens: options.maxTokens ?? 1024,
     };
 
+    const timeoutMs = options.timeoutMs ?? 30000;
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -91,6 +94,7 @@ export class HostedLLM implements LLMProvider {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (!res.ok) {
@@ -133,7 +137,10 @@ export class HostedLLM implements LLMProvider {
           status === 503 ||
           status === 504 ||
           (err instanceof Error &&
-            (err.message.includes('fetch failed') ||
+            (err.name === 'TimeoutError' ||
+              err.name === 'AbortError' ||
+              err.message.includes('fetch failed') ||
+              err.message.includes('timeout') ||
               err.message.includes('ETIMEDOUT') ||
               err.message.includes('rate limit')));
 

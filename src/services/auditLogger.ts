@@ -166,85 +166,96 @@ export async function recordAuditEvent(
 }
 
 /**
- * Validates the complete cryptographic hash chain for a tenant from seq = 1 to end.
+ * Validates the complete cryptographic hash chain for a tenant from seq = 1 to end
+ * in streaming cursor-based batches of 500 events to prevent heap memory exhaustion.
  */
-export async function verifyAuditChain(tenantId: string): Promise<AuditVerificationResult> {
+export async function verifyAuditChain(
+  tenantId: string,
+  batchSize = 500
+): Promise<AuditVerificationResult> {
   return await withTenantTransaction(tenantId, async (client) => {
-    const res = await client.query<AuditEventRecord>(
-      `SELECT * FROM audit_events 
-       WHERE tenant_id = $1 
-       ORDER BY seq ASC;`,
-      [tenantId]
-    );
-
-    const events = res.rows;
-    if (events.length === 0) {
-      return { valid: true, totalEvents: 0 };
-    }
-
+    let lastSeq = 0;
     let expectedPrevHash = GENESIS_HASH;
+    let totalEventsVerified = 0;
 
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
-      const expectedSeq = i + 1;
+    while (true) {
+      const res = await client.query<AuditEventRecord>(
+        `SELECT * FROM audit_events 
+         WHERE tenant_id = $1 AND seq > $2
+         ORDER BY seq ASC 
+         LIMIT $3;`,
+        [tenantId, lastSeq, batchSize]
+      );
 
-      // 1. Verify sequence continuity
-      if (Number(event.seq) !== expectedSeq) {
-        return {
-          valid: false,
-          totalEvents: events.length,
-          brokenSeq: Number(event.seq),
-          message: `Broken sequence detected at index ${i}: expected seq ${expectedSeq}, found ${event.seq}`,
-        };
+      const events = res.rows;
+      if (events.length === 0) {
+        break;
       }
 
-      // 2. Verify prev_hash matches previous entry_hash
-      if (event.prev_hash !== expectedPrevHash) {
-        return {
-          valid: false,
-          totalEvents: events.length,
-          brokenSeq: Number(event.seq),
-          expectedHash: expectedPrevHash,
-          actualHash: event.prev_hash,
-          message: `Broken prev_hash chain link at seq ${event.seq}`,
+      for (let i = 0; i < events.length; i++) {
+        const event = events[i];
+        const expectedSeq = totalEventsVerified + 1;
+
+        // 1. Verify sequence continuity
+        if (Number(event.seq) !== expectedSeq) {
+          return {
+            valid: false,
+            totalEvents: totalEventsVerified + events.length,
+            brokenSeq: Number(event.seq),
+            message: `Broken sequence detected at sequence ${event.seq}: expected seq ${expectedSeq}`,
+          };
+        }
+
+        // 2. Verify prev_hash matches previous entry_hash
+        if (event.prev_hash !== expectedPrevHash) {
+          return {
+            valid: false,
+            totalEvents: totalEventsVerified + events.length,
+            brokenSeq: Number(event.seq),
+            expectedHash: expectedPrevHash,
+            actualHash: event.prev_hash,
+            message: `Broken prev_hash chain link at seq ${event.seq}`,
+          };
+        }
+
+        // 3. Recompute canonical entry_hash
+        const entryPayload = {
+          seq: Number(event.seq),
+          timestamp: new Date(event.timestamp).toISOString(),
+          tenant_id: event.tenant_id,
+          user_id: event.user_id,
+          roles: event.roles,
+          clearance: event.clearance,
+          query_hash: event.query_hash,
+          applied_filter: event.applied_filter,
+          returned_chunk_ids: event.returned_chunk_ids,
+          acl_versions: event.acl_versions,
+          request_id: event.request_id,
+          generation_occurred: event.generation_occurred,
         };
+
+        const computedHash = computeEntryHash(event.prev_hash, entryPayload);
+
+        if (computedHash !== event.entry_hash) {
+          return {
+            valid: false,
+            totalEvents: totalEventsVerified + events.length,
+            brokenSeq: Number(event.seq),
+            expectedHash: computedHash,
+            actualHash: event.entry_hash,
+            message: `Tampered payload detected at seq ${event.seq}: hash does not match canonical payload`,
+          };
+        }
+
+        expectedPrevHash = event.entry_hash;
+        totalEventsVerified++;
+        lastSeq = Number(event.seq);
       }
-
-      // 3. Recompute canonical entry_hash
-      const entryPayload = {
-        seq: Number(event.seq),
-        timestamp: new Date(event.timestamp).toISOString(),
-        tenant_id: event.tenant_id,
-        user_id: event.user_id,
-        roles: event.roles,
-        clearance: event.clearance,
-        query_hash: event.query_hash,
-        applied_filter: event.applied_filter,
-        returned_chunk_ids: event.returned_chunk_ids,
-        acl_versions: event.acl_versions,
-        request_id: event.request_id,
-        generation_occurred: event.generation_occurred,
-      };
-
-      const computedHash = computeEntryHash(event.prev_hash, entryPayload);
-
-      if (computedHash !== event.entry_hash) {
-        return {
-          valid: false,
-          totalEvents: events.length,
-          brokenSeq: Number(event.seq),
-          expectedHash: computedHash,
-          actualHash: event.entry_hash,
-          message: `Tampered payload detected at seq ${event.seq}: hash does not match canonical payload`,
-        };
-      }
-
-      expectedPrevHash = event.entry_hash;
     }
 
     return {
       valid: true,
-      totalEvents: events.length,
+      totalEvents: totalEventsVerified,
     };
   });
 }

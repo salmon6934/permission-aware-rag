@@ -57,22 +57,29 @@ export async function documentRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      // Extract form fields
-      const fields = fileData.fields as Record<string, { value?: unknown } | undefined>;
+      // Extract form fields safely supporting both single and repeated multipart fields
+      const fields = fileData.fields as Record<string, { value?: unknown } | Array<{ value?: unknown }> | undefined>;
 
       // Parse allowed_roles
       let allowedRoles: string[] = [];
-      const rolesRaw = fields.allowed_roles?.value;
-      if (typeof rolesRaw === 'string') {
+      const rolesField = fields.allowed_roles;
+
+      if (Array.isArray(rolesField)) {
+        // Handles repeated form keys: allowed_roles=role1 & allowed_roles=role2
+        allowedRoles = rolesField
+          .map((f) => (typeof f.value === 'string' ? f.value.trim() : ''))
+          .filter(Boolean);
+      } else if (rolesField && typeof rolesField.value === 'string') {
+        const rolesRaw = rolesField.value.trim();
         try {
           const parsed = JSON.parse(rolesRaw);
           if (Array.isArray(parsed)) {
-            allowedRoles = parsed.map(String);
+            allowedRoles = parsed.map(String).map((r) => r.trim()).filter(Boolean);
           } else {
-            allowedRoles = rolesRaw.split(',').map((r) => r.trim());
+            allowedRoles = rolesRaw.split(',').map((r) => r.trim()).filter(Boolean);
           }
         } catch {
-          allowedRoles = rolesRaw.split(',').map((r) => r.trim());
+          allowedRoles = rolesRaw.split(',').map((r) => r.trim()).filter(Boolean);
         }
       }
 
@@ -85,7 +92,8 @@ export async function documentRoutes(app: FastifyInstance): Promise<void> {
       }
 
       // Parse sensitivity
-      const sensitivityRaw = fields.sensitivity?.value;
+      const sensField = fields.sensitivity;
+      const sensitivityRaw = Array.isArray(sensField) ? sensField[0]?.value : sensField?.value;
       const sensitivity = Number(sensitivityRaw);
       if (isNaN(sensitivity) || !Number.isInteger(sensitivity) || sensitivity < 0 || sensitivity > 3) {
         return reply.status(400).send({

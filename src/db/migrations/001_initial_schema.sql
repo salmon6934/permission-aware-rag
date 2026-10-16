@@ -83,6 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_chunks_tenant_id ON chunks (tenant_id);
 CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_id ON audit_events (tenant_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_allowed_roles ON chunks USING gin (allowed_roles);
 CREATE INDEX IF NOT EXISTS idx_chunks_tenant_roles_sensitivity ON chunks (tenant_id, sensitivity);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_audit_events_tenant_seq ON audit_events (tenant_id, seq DESC);
 
 -- Enable & Force Row Level Security (RLS)
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;

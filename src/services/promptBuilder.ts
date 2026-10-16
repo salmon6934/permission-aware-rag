@@ -4,6 +4,17 @@ export const FALLBACK_DENIAL_ANSWER =
   'I cannot find any authorized information to answer your query.';
 
 /**
+ * Escapes boundary delimiter markers to prevent context escape prompt injection attacks.
+ */
+export function sanitizePromptContent(input: string): string {
+  if (!input) return '';
+  return input
+    .replace(/===\s*(BEGIN|END)\s+AUTHORIZED\s+CONTEXT\s*===/gi, '[ESCAPED_DELIMITER]')
+    .replace(/---\s*\[AUTHORIZED CONTEXT CHUNK.*?\]\s*---/gi, '[ESCAPED_DELIMITER]')
+    .replace(/----------------------------------------/g, '-------------------');
+}
+
+/**
  * Constructs a prompt framing retrieved chunks inside untrusted data tags
  * and instructing the LLM to strictly ground answers and provide citations.
  */
@@ -11,6 +22,8 @@ export function buildPrompt(query: string, chunks: RetrievedChunk[]): string {
   if (chunks.length === 0) {
     return '';
   }
+
+  const sanitizedQuery = sanitizePromptContent(query.trim());
 
   const contextBlocks = chunks
     .map(
@@ -20,7 +33,7 @@ chunk_id: ${c.id}
 allowed_roles: ${c.allowed_roles.join(', ')}
 sensitivity_level: ${c.sensitivity}
 content:
-${c.text}
+${sanitizePromptContent(c.text)}
 ----------------------------------------`
     )
     .join('\n\n');
@@ -39,7 +52,8 @@ MANDATORY SECURITY INSTRUCTIONS:
 ${contextBlocks}
 === END AUTHORIZED CONTEXT ===
 
-USER QUESTION: ${query}
+USER QUESTION: ${sanitizedQuery}
 
 AUTHORIZED ANSWER:`;
 }
+

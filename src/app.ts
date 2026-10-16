@@ -1,6 +1,7 @@
 import fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import { appPool } from './db/pool.js';
 import { devRoutes } from './routes/dev.js';
 import { documentRoutes } from './routes/documents.js';
@@ -17,6 +18,12 @@ export function buildApp(): FastifyInstance {
 
   app.register(cors, {
     origin: true,
+  });
+
+  // Protect against DoS with gateway rate limiting
+  app.register(rateLimit, {
+    max: process.env.NODE_ENV === 'test' ? 10000 : 120,
+    timeWindow: '1 minute',
   });
 
   // Register multipart streaming for file uploads with 10MB limit

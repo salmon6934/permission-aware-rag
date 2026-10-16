@@ -33,10 +33,11 @@ describe('Day 2: JWT Service Unit Tests', () => {
 
   it('fails closed when token signature is tampered with', async () => {
     const token = await signToken(validPrincipal);
-    // Alter last character of the signature
-    const lastChar = token.slice(-1);
-    const tamperedChar = lastChar === 'a' ? 'b' : 'a';
-    const tamperedToken = token.slice(0, -1) + tamperedChar;
+    const parts = token.split('.');
+    // Alter first character of the signature to guarantee byte modification
+    const signature = parts[2];
+    const tamperedSig = (signature[0] === 'a' ? 'b' : 'a') + signature.slice(1);
+    const tamperedToken = `${parts[0]}.${parts[1]}.${tamperedSig}`;
 
     await expect(verifyToken(tamperedToken)).rejects.toThrow();
   });
