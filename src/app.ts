@@ -1,7 +1,10 @@
 import fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import { appPool } from './db/pool.js';
 import { devRoutes } from './routes/dev.js';
+import { documentRoutes } from './routes/documents.js';
+import { MAX_FILE_SIZE_BYTES } from './ingestion/constants.js';
 
 export function buildApp(): FastifyInstance {
   const app = fastify({
@@ -12,6 +15,14 @@ export function buildApp(): FastifyInstance {
 
   app.register(cors, {
     origin: true,
+  });
+
+  // Register multipart streaming for file uploads with 10MB limit
+  app.register(multipart, {
+    limits: {
+      fileSize: MAX_FILE_SIZE_BYTES,
+      files: 1,
+    },
   });
 
   // Health check endpoint
@@ -34,6 +45,9 @@ export function buildApp(): FastifyInstance {
 
   // Register dev routes (test token generation)
   app.register(devRoutes);
+
+  // Register document routes (upload and deletion)
+  app.register(documentRoutes);
 
   return app;
 }
