@@ -47,9 +47,13 @@ describe('Day 4: Dynamic ACL Update & Lifecycle Tests', () => {
   afterAll(async () => {
     const client = await migratorPool.connect();
     try {
+      await client.query('BEGIN;');
+      await client.query("SET LOCAL app.allow_test_mutation = 'true';");
+      await client.query(`DELETE FROM audit_events WHERE tenant_id = '${tenantId}';`);
       await client.query(`DELETE FROM chunks WHERE tenant_id = '${tenantId}';`);
       await client.query(`DELETE FROM documents WHERE tenant_id = '${tenantId}';`);
       await client.query(`DELETE FROM tenants WHERE id = '${tenantId}';`);
+      await client.query('COMMIT;');
     } finally {
       client.release();
     }

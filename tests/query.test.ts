@@ -71,12 +71,13 @@ describe('Day 5: Query Endpoint & Citation Enforcement Integration Suite', () =>
   afterAll(async () => {
     const client = await migratorPool.connect();
     try {
-      await client.query('ALTER TABLE audit_events DISABLE TRIGGER trg_audit_events_immutable;');
+      await client.query('BEGIN;');
+      await client.query("SET LOCAL app.allow_test_mutation = 'true';");
       await client.query(`DELETE FROM audit_events WHERE tenant_id = '${tenantId}';`);
-      await client.query('ALTER TABLE audit_events ENABLE TRIGGER trg_audit_events_immutable;');
       await client.query(`DELETE FROM chunks WHERE tenant_id = '${tenantId}';`);
       await client.query(`DELETE FROM documents WHERE tenant_id = '${tenantId}';`);
       await client.query(`DELETE FROM tenants WHERE id = '${tenantId}';`);
+      await client.query('COMMIT;');
     } finally {
       client.release();
     }

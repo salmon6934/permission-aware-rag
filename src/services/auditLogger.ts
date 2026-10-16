@@ -42,6 +42,7 @@ export interface AuditVerificationResult {
   expectedHash?: string;
   actualHash?: string;
   message?: string;
+  error?: string;
 }
 
 /**

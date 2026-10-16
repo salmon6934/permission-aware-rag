@@ -13,10 +13,11 @@ describe('Day 1: PostgreSQL Row Level Security (RLS) Isolation & Privilege Harde
     // 2. Clean up and seed test data using migrator pool
     const client = await migratorPool.connect();
     try {
-      await client.query('ALTER TABLE audit_events DISABLE TRIGGER trg_audit_events_immutable;');
+      await client.query('BEGIN;');
+      await client.query("SET LOCAL app.allow_test_mutation = 'true';");
       await client.query('DELETE FROM audit_events WHERE tenant_id IN ($1, $2);', [tenantAId, tenantBId]);
       await client.query('DELETE FROM tenants WHERE id IN ($1, $2);', [tenantAId, tenantBId]);
-      await client.query('ALTER TABLE audit_events ENABLE TRIGGER trg_audit_events_immutable;');
+      await client.query('COMMIT;');
 
       // Seed Tenant A
       await client.query(
@@ -77,10 +78,11 @@ describe('Day 1: PostgreSQL Row Level Security (RLS) Isolation & Privilege Harde
   afterAll(async () => {
     const client = await migratorPool.connect();
     try {
-      await client.query('ALTER TABLE audit_events DISABLE TRIGGER trg_audit_events_immutable;');
+      await client.query('BEGIN;');
+      await client.query("SET LOCAL app.allow_test_mutation = 'true';");
       await client.query('DELETE FROM audit_events WHERE tenant_id IN ($1, $2);', [tenantAId, tenantBId]);
       await client.query('DELETE FROM tenants WHERE id IN ($1, $2);', [tenantAId, tenantBId]);
-      await client.query('ALTER TABLE audit_events ENABLE TRIGGER trg_audit_events_immutable;');
+      await client.query('COMMIT;');
     } finally {
       client.release();
     }

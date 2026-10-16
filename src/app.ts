@@ -57,5 +57,39 @@ export function buildApp(): FastifyInstance {
   // Register audit routes (hash chain inspection and cryptographic verification)
   app.register(auditRoutes);
 
+  // Centralized Error Sanitization Handler
+  app.setErrorHandler((error, request, reply) => {
+    request.log.error(error);
+
+    const err = error as { statusCode?: number; name?: string; message?: string };
+    const statusCode =
+      err.statusCode && err.statusCode >= 400 && err.statusCode < 600
+        ? err.statusCode
+        : 500;
+
+    if (statusCode >= 500) {
+      return reply.status(statusCode).send({
+        statusCode,
+        error: 'Internal Server Error',
+        message: 'An unexpected internal error occurred. Please contact system support.',
+      });
+    }
+
+    return reply.status(statusCode).send({
+      statusCode,
+      error: err.name || 'Bad Request',
+      message: err.message || 'The request could not be processed.',
+    });
+  });
+
+  // Centralized Not-Found Handler
+  app.setNotFoundHandler((_request, reply) => {
+    return reply.status(404).send({
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'The requested resource was not found.',
+    });
+  });
+
   return app;
 }

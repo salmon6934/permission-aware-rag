@@ -106,14 +106,18 @@ export async function queryRoutes(app: FastifyInstance): Promise<void> {
           generationOccurred: true,
         });
 
+        const isDenial = llmResponse.answer === FALLBACK_DENIAL_ANSWER;
+
         return reply.status(200).send({
           answer: llmResponse.answer,
           model: llmResponse.model,
-          citations: chunks.map((c) => ({
-            doc_id: c.doc_id,
-            chunk_id: c.id,
-            similarity: c.similarity,
-          })),
+          citations: isDenial
+            ? []
+            : chunks.map((c) => ({
+                doc_id: c.doc_id,
+                chunk_id: c.id,
+                similarity: c.similarity,
+              })),
           query_hash: queryHash,
           request_id: requestId,
         });

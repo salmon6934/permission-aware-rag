@@ -1,0 +1,61 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-verify:
+    name: Build, Lint, and Adversarial Security Test Suite
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: rag_db
+          POSTGRES_USER: migrator
+          POSTGRES_PASSWORD: migrator_secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      DATABASE_URL: postgresql://migrator:migrator_secret@localhost:5432/rag_db
+      DATABASE_APP_URL: postgresql://app_user:app_secret@localhost:5432/rag_db
+      JWT_SECRET: super-secret-dev-jwt-key-must-be-at-least-32-chars-long
+      LLM_PROVIDER: fake-llm
+      EMBEDDING_MODEL: all-MiniLM-L6-v2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Database Migrations
+        run: npm run migrate
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript Compilation
+        run: npm run build
+
+      - name: Run Complete Test Suite
+        run: npm test
