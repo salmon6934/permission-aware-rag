@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { env } from '../config/env.js';
 import { signToken } from '../auth/jwt.js';
 import { PrincipalSchema } from '../auth/types.js';
 

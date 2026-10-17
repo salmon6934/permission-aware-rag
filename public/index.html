@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Declassified Records Office | Permission-Aware Multi-Tenant RAG</title>
+  <title>Permission-Aware RAG</title>
   <meta name="description" content="Official intelligence dashboard demonstrating in-query vector authorization, tenant cryptographic boundaries, and tamper-evident audit logging.">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-  <!-- Official Records Top Bar -->
+  <!-- Top Navigation Bar -->
   <header class="records-header">
     <div class="records-title-group">
-      <span class="archive-stamp">SEC // DEPT-RAG</span>
       <div>
-        <h1>Declassified Records Office</h1>
+        <h1>Permission-Aware RAG</h1>
       </div>
     </div>
 
@@ -27,20 +26,20 @@
       </div>
 
       <button id="nav-btn-dashboard" class="nav-tab-btn active" onclick="switchView('dashboard')">
-        <span>📋</span> PERSONNEL MATRIX
+        <span>👥</span> USERS & QUERIES
       </button>
       <button id="nav-btn-admin" class="nav-tab-btn" onclick="switchView('admin')">
-        <span>🗄️</span> FILING DESK
+        <span>📄</span> UPLOAD DOCUMENTS
       </button>
       <button id="nav-btn-audit" class="nav-tab-btn" onclick="switchView('audit')">
-        <span>🔒</span> AUDIT LEDGER
+        <span>🔒</span> AUDIT LOGS
       </button>
     </nav>
   </header>
 
-  <!-- View 1: Main Personnel Comparison Dashboard -->
+  <!-- View 1: Main Users & Queries Dashboard -->
   <main id="view-dashboard">
-    <!-- Official Dispatch Telegraph (Broadcast Bar) -->
+    <!-- Search All Users Bar -->
     <section class="telegraph-bar">
       <div class="telegraph-card">
         <div class="telegraph-input-wrap">
@@ -48,45 +47,45 @@
             type="text" 
             id="broadcast-input" 
             class="telegraph-input" 
-            placeholder="Type query to transmit simultaneously to all active personnel badges..."
+            placeholder="Ask a question across all active users to compare what they can see..."
             onkeydown="if(event.key === 'Enter') handleBroadcastQuery()"
           />
         </div>
         <button class="btn-dispatch" onclick="handleBroadcastQuery()">
-          <span>TRANSMIT DISPATCH</span> ➔
+          <span>SEND TO ALL</span> ➔
         </button>
       </div>
 
-      <!-- Quick Inspection Queries -->
+      <!-- Quick Sample Questions -->
       <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
         <span style="font-family: var(--font-typewriter); font-size: 11px; color: var(--ink-muted); text-transform: uppercase;">
-          PRE-FORMULATED INQUIRIES:
+          SAMPLE QUESTIONS:
         </span>
         <button class="prompt-chip" onclick="setBroadcastPrompt('What are the quantum photonics propulsion specifications?')">
-          Quantum Propulsion Specs (Engineering L1)
+          Engineering Specs (Clearance 1)
         </button>
         <button class="prompt-chip" onclick="setBroadcastPrompt('What are the capital budget allocations for Q3?')">
-          Capital Budget (Finance L2)
+          Finance Budget (Clearance 2)
         </button>
         <button class="prompt-chip" onclick="setBroadcastPrompt('Summarize executive board minutes regarding Project Vulcan')">
-          Board Minutes (Executive L3)
+          Board Minutes (Clearance 3)
         </button>
       </div>
     </section>
 
-    <!-- Personnel Badges Center Stage -->
+    <!-- Users Grid -->
     <section class="main-view-container">
       <div class="action-ribbon">
         <div class="action-btn-group">
           <button class="btn-secondary" onclick="openAddPersonaModal()">
-            <span>➕</span> ISSUE NEW CREDENTIAL BADGE
+            <span>➕</span> ADD USER
           </button>
           <button class="btn-secondary" onclick="seedDefaultPersonas()">
-            <span>⚡</span> SEED STANDARD FIELD ROLES
+            <span>⚡</span> LOAD SAMPLE USERS
           </button>
         </div>
         <div style="font-family: var(--font-typewriter); font-size: 11px; color: var(--ink-muted);">
-          ACTIVE PERSONNEL: <span id="badge-count-label">0 / 4 BADGES</span>
+          ACTIVE USERS: <span id="badge-count-label">0 / 4 USERS</span>
         </div>
       </div>
 
@@ -96,43 +95,43 @@
     </section>
   </main>
 
-  <!-- View 2: Filing Desk / Admin Panel -->
+  <!-- View 2: Document Upload & Management -->
   <section id="view-admin" class="filing-desk-container hidden">
     <div class="filing-desk-card">
       <div class="filing-tabs">
         <button class="filing-tab active" id="tab-ingest-btn" onclick="switchAdminTab('ingest')">
-          CLASSIFY & INGEST RECORD
+          UPLOAD & TAG DOCUMENT
         </button>
         <button class="filing-tab" id="tab-records-btn" onclick="switchAdminTab('records')">
-          DEPOSIT ARCHIVE BROWSER
+          VIEW EXISTING DOCUMENTS
         </button>
       </div>
 
-      <!-- Tab A: Classify & Ingest Form -->
+      <!-- Tab A: Upload Form -->
       <div id="admin-tab-ingest" class="filing-tab-content">
         <form id="ingest-form" onsubmit="handleDocumentUpload(event)">
           <div class="dossier-form-grid">
             <div>
               <div class="form-group">
-                <label class="form-label">ASSIGNED TENANT REPOSITORY</label>
+                <label class="form-label">ORGANIZATION</label>
                 <select id="ingest-tenant" class="form-select">
-                  <option value="11111111-1111-1111-1111-111111111111">Apex Global Inc (11111111-...)</option>
-                  <option value="22222222-2222-2222-2222-222222222222">Nexus Dynamics LLC (22222222-...)</option>
+                  <option value="11111111-1111-1111-1111-111111111111">Apex Global Inc</option>
+                  <option value="22222222-2222-2222-2222-222222222222">Nexus Dynamics LLC</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label class="form-label">REQUIRED CLEARANCE SENSITIVITY</label>
+                <label class="form-label">CLEARANCE LEVEL (SENSITIVITY)</label>
                 <select id="ingest-sensitivity" class="form-select">
-                  <option value="0">LEVEL 0 // PUBLIC (General Access)</option>
-                  <option value="1" selected>LEVEL 1 // INTERNAL (Staff Only)</option>
-                  <option value="2">LEVEL 2 // CONFIDENTIAL (Management & Ops)</option>
-                  <option value="3">LEVEL 3 // RESTRICTED (Executive Eyes Only)</option>
+                  <option value="0">Level 0: Public (Everyone)</option>
+                  <option value="1" selected>Level 1: Internal (Staff)</option>
+                  <option value="2">Level 2: Confidential (Management)</option>
+                  <option value="3">Level 3: Restricted (Executive Only)</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label class="form-label">AUTHORIZED DIVISION ROLES</label>
+                <label class="form-label">ALLOWED ROLES</label>
                 <div style="display: flex; gap: 12px; margin-top: 6px; font-family: var(--font-typewriter); font-size: 12px;">
                   <label><input type="checkbox" name="ingest_roles" value="engineering" checked> engineering</label>
                   <label><input type="checkbox" name="ingest_roles" value="finance"> finance</label>
@@ -144,35 +143,35 @@
 
             <div>
               <div class="form-group">
-                <label class="form-label">RECORD ATTACHMENT (.MD, .TXT, .PDF)</label>
+                <label class="form-label">SELECT FILE (.MD, .TXT, .PDF)</label>
                 <div class="dropzone-box" onclick="document.getElementById('file-input').click()">
                   <div class="dropzone-icon">📁</div>
-                  <div class="dropzone-title" id="file-label">SELECT RECORD TO ARCHIVE</div>
-                  <div class="dropzone-sub">In-process vector embeddings generated on submission</div>
+                  <div class="dropzone-title" id="file-label">CLICK TO SELECT FILE</div>
+                  <div class="dropzone-sub">Chunks and vector embeddings are created automatically</div>
                   <input type="file" id="file-input" style="display: none;" onchange="handleFileSelected(event)" accept=".md,.txt,.pdf">
                 </div>
               </div>
 
               <button type="submit" class="btn-dispatch" style="width: 100%; justify-content: center; margin-top: 16px;">
-                INDEX & STAMP RECORD
+                UPLOAD & SAVE DOCUMENT
               </button>
             </div>
           </div>
         </form>
       </div>
 
-      <!-- Tab B: Active Archive Browser -->
+      <!-- Tab B: Existing Documents Browser -->
       <div id="admin-tab-records" class="filing-tab-content hidden">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h3 style="font-size: 14px; text-transform: uppercase;">Indexed Tenant Records</h3>
-          <button class="btn-secondary" onclick="loadTenantDocuments()"><span>🔄</span> REFRESH ARCHIVE</button>
+          <h3 style="font-size: 14px; text-transform: uppercase;">Saved Documents in Database</h3>
+          <button class="btn-secondary" onclick="loadTenantDocuments()"><span>🔄</span> REFRESH LIST</button>
         </div>
         <table class="records-table">
           <thead>
             <tr>
-              <th>RECORD FILENAME</th>
-              <th>CLASSIFICATION</th>
-              <th>ALLOWED DIVISIONS</th>
+              <th>FILENAME</th>
+              <th>CLEARANCE</th>
+              <th>ALLOWED ROLES</th>
               <th>CHUNKS</th>
               <th>STATUS</th>
               <th class="text-right">ACTIONS</th>
@@ -191,13 +190,13 @@
     <div class="filing-desk-card">
       <div style="padding: 20px; background: var(--bg-concrete-light); border-bottom: 2px solid var(--ink-navy); display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h2 style="font-size: 15px; font-weight: 800; text-transform: uppercase;">Cryptographic Chain of Custody Ledger</h2>
+          <h2 style="font-size: 15px; font-weight: 800; text-transform: uppercase;">Audit Logs (Tamper-Evident)</h2>
           <p style="font-family: var(--font-typewriter); font-size: 11px; color: var(--ink-muted); margin-top: 2px;">
-            Immutable SHA-256 hash chaining (Prev Hash ➔ Current Hash). Zero-tamper verified.
+            Every single query is saved with SHA-256 hash chaining to guarantee logs cannot be altered.
           </p>
         </div>
         <button class="btn-dispatch" onclick="verifyAuditLedger()">
-          <span>VERIFY CRYPTOGRAPHIC CHAIN</span> 🔒
+          <span>CHECK FOR TAMPERING</span> 🔒
         </button>
       </div>
 
@@ -208,11 +207,11 @@
           <thead>
             <tr>
               <th>SEQ #</th>
-              <th>TIMESTAMP</th>
-              <th>PERSONNEL</th>
+              <th>TIME</th>
+              <th>USER</th>
               <th>ROLES / CLEARANCE</th>
               <th>REQUEST ID</th>
-              <th>HASH LINKAGE (PREV ➔ CURRENT)</th>
+              <th>HASH CHAIN (PREV ➔ CURRENT)</th>
             </tr>
           </thead>
           <tbody id="audit-table-body">
@@ -223,22 +222,22 @@
     </div>
   </section>
 
-  <!-- Modal: Issue New Credential Badge -->
+  <!-- Modal: Add User -->
   <div id="modal-add-persona" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>ISSUE NEW CREDENTIAL BADGE</h3>
+        <h3>ADD NEW USER</h3>
         <button class="btn-close-modal" onclick="closeAddPersonaModal()">✕</button>
       </div>
       <div class="modal-body">
         <form onsubmit="handleCreatePersona(event)">
           <div class="form-group">
-            <label class="form-label">PERSONNEL NAME</label>
+            <label class="form-label">USER NAME</label>
             <input type="text" id="modal-persona-name" class="form-input" placeholder="e.g. Dana Scully" required>
           </div>
 
           <div class="form-group">
-            <label class="form-label">ASSIGNED ORGANIZATION / TENANT</label>
+            <label class="form-label">ORGANIZATION</label>
             <select id="modal-persona-tenant" class="form-select">
               <option value="11111111-1111-1111-1111-111111111111">Apex Global Inc</option>
               <option value="22222222-2222-2222-2222-222222222222">Nexus Dynamics LLC</option>
@@ -246,23 +245,36 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">SECURITY CLEARANCE STRIPE</label>
+            <label class="form-label">CLEARANCE LEVEL</label>
             <select id="modal-persona-clearance" class="form-select">
-              <option value="0">LEVEL 0 // PUBLIC</option>
-              <option value="1" selected>LEVEL 1 // INTERNAL</option>
-              <option value="2">LEVEL 2 // CONFIDENTIAL</option>
-              <option value="3">LEVEL 3 // RESTRICTED</option>
+              <option value="0">Level 0: Public (General)</option>
+              <option value="1" selected>Level 1: Internal (Staff)</option>
+              <option value="2">Level 2: Confidential (Management)</option>
+              <option value="3">Level 3: Restricted (Executive)</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label class="form-label">ASSIGNED DIVISION ROLES (Comma separated)</label>
-            <input type="text" id="modal-persona-roles" class="form-input" placeholder="engineering, finance, admin" value="engineering" required>
+            <label class="form-label">ROLES</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; font-family: var(--font-typewriter); font-size: 12px; background: #FFF; padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: 2px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" name="modal_roles" value="engineering" checked> engineering
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" name="modal_roles" value="finance"> finance
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" name="modal_roles" value="executive"> executive
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" name="modal_roles" value="admin"> admin
+              </label>
+            </div>
           </div>
 
           <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeAddPersonaModal()">CANCEL</button>
-            <button type="submit" class="btn-dispatch" style="flex: 2; justify-content: center;">PRINT BADGE</button>
+            <button type="submit" class="btn-dispatch" style="flex: 2; justify-content: center;">ADD USER</button>
           </div>
         </form>
       </div>

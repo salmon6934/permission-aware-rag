@@ -55,9 +55,9 @@ const DEFAULT_PERSONAS = [
 let activePersonas = [];
 let selectedFile = null;
 
-// Initialize on page load
+// Initialize on page load (empty by default - add manually)
 window.addEventListener('DOMContentLoaded', async () => {
-  seedDefaultPersonas();
+  renderPersonas();
   pollTelemetry();
   setInterval(pollTelemetry, 8000);
 });
@@ -161,9 +161,27 @@ function renderPersonas() {
   container.innerHTML = '';
   document.getElementById('badge-count-label').innerText = `${activePersonas.length} / 4 BADGES`;
 
+  if (activePersonas.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; background: var(--panel-white); border: 2px dashed var(--border-subtle); padding: 48px 24px; text-align: center; border-radius: 4px;">
+        <div style="font-size: 28px; margin-bottom: 8px;">📇</div>
+        <div style="font-weight: 800; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+          NO USERS ADDED YET
+        </div>
+        <div style="font-family: var(--font-typewriter); font-size: 13px; color: var(--ink-muted); max-width: 480px; margin: 0 auto 16px;">
+          Click "Add User" to create up to 4 users with different roles and clearance levels, then compare their responses side-by-side.
+        </div>
+        <button class="btn-dispatch" style="margin: 0 auto;" onclick="openAddPersonaModal()">
+          <span>➕</span> ADD FIRST USER
+        </button>
+      </div>
+    `;
+    return;
+  }
+
   activePersonas.forEach((persona, index) => {
     const classMeta = CLASSIFICATIONS[persona.clearance] || CLASSIFICATIONS[0];
-    const barcode = `BAR-${persona.tenant_id.substring(0, 4)}-${persona.roles[0].substring(0, 3).toUpperCase()}-${persona.clearance}`;
+    const barcode = `ID-${persona.tenant_id.substring(0, 4)}-${persona.roles[0].substring(0, 3).toUpperCase()}-L${persona.clearance}`;
 
     const badge = document.createElement('div');
     badge.className = 'id-badge';
@@ -179,21 +197,21 @@ function renderPersonas() {
             <div class="badge-org">${escapeHtml(persona.org_name)}</div>
           </div>
           <span class="badge-stamp ${classMeta.colorClass}">
-            LEVEL ${persona.clearance} // ${classMeta.name}
+            LEVEL ${persona.clearance}: ${classMeta.name}
           </span>
         </div>
 
         <div class="badge-meta-row">
           ${persona.roles.map(r => `<span class="role-chip">${escapeHtml(r)}</span>`).join('')}
           <span class="barcode-text">${barcode}</span>
-          ${activePersonas.length > 1 ? `<button onclick="removePersona(${index})" style="background: none; border: none; font-size: 11px; color: var(--ink-muted); cursor: pointer; margin-left: 4px;">✕</button>` : ''}
+          ${activePersonas.length > 0 ? `<button onclick="removePersona(${index})" style="background: none; border: none; font-size: 13px; font-weight: bold; color: var(--ink-muted); cursor: pointer; margin-left: 6px;" title="Remove User">✕</button>` : ''}
         </div>
       </div>
 
       <div class="badge-body">
         <div class="typed-record-box" id="output-${persona.id}">
           <div class="typed-record-placeholder">
-            [AWAITING OFFICIAL INQUIRY DISPATCH]
+            [WAITING FOR QUESTION]
           </div>
         </div>
 
@@ -202,9 +220,9 @@ function renderPersonas() {
             type="text" 
             id="query-input-${persona.id}"
             class="badge-query-input" 
-            placeholder="Inquire with this credential..."
+            placeholder="Ask a question for this user..."
           />
-          <button type="submit" class="badge-query-btn">QUERY</button>
+          <button type="submit" class="badge-query-btn">ASK</button>
         </form>
       </div>
     `;
@@ -241,7 +259,7 @@ async function dispatchQueryToPersona(persona, query) {
   outputBox.innerHTML = `
     <div style="display: flex; align-items: center; gap: 8px; color: var(--ink-muted); font-size: 11px;">
       <span class="telemetry-dot" style="background: var(--ink-navy);"></span>
-      SEARCHING EXTENSIONS.VECTOR & EVALUATING POLICY...
+      SEARCHING DOCUMENTS & CHECKING PERMISSIONS...
     </div>
   `;
 
@@ -268,29 +286,28 @@ async function dispatchQueryToPersona(persona, query) {
       // Visual Redaction Bar Metaphor
       outputBox.innerHTML = `
         <div style="margin-bottom: 8px; font-weight: 700; color: var(--redaction-black);">
-          OFFICIAL RESPONSE:
+          ANSWER:
         </div>
         <div style="font-size: 11px; line-height: 1.8;">
-          ${data.answer || 'Access denied by authorization policy.'}
+          ${data.answer || 'Access denied by permissions.'}
         </div>
         <div class="redaction-notice">
           <span class="redaction-notice-icon">█</span>
-          <span>WITHHELD BY POLICY: Content requires clearance/roles beyond Level ${persona.clearance} (${persona.roles.join(', ')})</span>
+          <span>HIDDEN BY PERMISSIONS: Requires higher clearance or different roles than Level ${persona.clearance} (${persona.roles.join(', ')})</span>
         </div>
         <div style="margin-top: 10px;">
           <span class="redaction-bar">████████████████████████████████</span>
           <span class="redaction-bar">████████████████████</span>
-          <span class="redaction-bar">████████████████████████████</span>
         </div>
       `;
     } else {
-      // Declassified Answer with Carbon Copy Typed Excerpts
+      // Answer with Document Excerpts
       let citationsHtml = '';
       if (data.citations && data.citations.length > 0) {
         citationsHtml = `
           <div class="excerpt-dossier">
             <div class="excerpt-header">
-              <span>DEPOSITED SOURCE EXCERPTS (${data.citations.length})</span>
+              <span>MATCHING DOCUMENT EXCERPTS (${data.citations.length})</span>
             </div>
             ${data.citations.map((c, i) => {
               const sens = CLASSIFICATIONS[c.sensitivity] || CLASSIFICATIONS[0];
@@ -355,7 +372,12 @@ async function handleCreatePersona(e) {
   const tenant_id = document.getElementById('modal-persona-tenant').value;
   const org_name = tenant_id === '11111111-1111-1111-1111-111111111111' ? 'Apex Global Inc' : 'Nexus Dynamics LLC';
   const clearance = parseInt(document.getElementById('modal-persona-clearance').value, 10);
-  const roles = document.getElementById('modal-persona-roles').value.split(',').map(r => r.trim()).filter(Boolean);
+  const roles = Array.from(document.querySelectorAll('input[name="modal_roles"]:checked')).map(cb => cb.value);
+
+  if (roles.length === 0) {
+    alert('Please select at least one assigned role.');
+    return;
+  }
 
   const newPersona = {
     id: `badge-${Date.now()}`,
