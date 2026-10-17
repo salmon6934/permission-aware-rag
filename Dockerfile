@@ -33,8 +33,11 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copy compiled JavaScript from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy public web dashboard assets
+COPY public/ ./public/
+
 # Copy migration SQL assets so migrations can be executed in production
-COPY src/db/migrations ./dist/db/migrations
+COPY src/db/migrations ./dist/src/db/migrations
 COPY src/db/migrations ./src/db/migrations
 
 # Set proper ownership to non-root node user
@@ -49,4 +52,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://localhost:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/src/server.js"]
