@@ -20,6 +20,7 @@ describe('Prompt Builder Security & Context Boundary Tests', () => {
       {
         id: 'chunk-1',
         doc_id: 'doc-1',
+        filename: 'test.md',
         text: 'Normal engineering documentation content.',
         allowed_roles: ['engineering'],
         sensitivity: 1,

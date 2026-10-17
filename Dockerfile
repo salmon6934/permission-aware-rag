@@ -35,6 +35,7 @@ COPY --from=builder /app/dist ./dist
 
 # Copy public web dashboard assets
 COPY public/ ./public/
+COPY public/ ./dist/public/
 
 # Copy migration SQL assets so migrations can be executed in production
 COPY src/db/migrations ./dist/src/db/migrations

@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appPool } from './db/pool.js';
@@ -41,9 +42,18 @@ export function buildApp(): FastifyInstance {
     },
   });
 
+  // Find public directory across dev and compiled dist environments
+  const candidatePublicDirs = [
+    path.join(process.cwd(), 'public'),
+    path.join(__dirname, '../../public'),
+    path.join(__dirname, '../public'),
+    path.join(__dirname, 'public'),
+  ];
+  const publicDir = candidatePublicDirs.find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'public');
+
   // Serve static assets for the Declassified Records Office frontend dashboard
   app.register(fastifyStatic, {
-    root: path.join(__dirname, '../public'),
+    root: publicDir,
     prefix: '/',
   });
 
